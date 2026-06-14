@@ -30,9 +30,10 @@ internal class Locale
         var dictionary = CSVParser.LoadFromString(localizationString, Delimiter.Comma);
 
         Regex regex = new("\\\\n");
-        Dictionary<string, string> currentTexts = LocalizationManager.CurrentTexts;
+        Dictionary<string, string> currentTexts = Traverse.Create(typeof(LocalizationManager)).Field("CurrentTexts").GetValue<Dictionary<string, string>>();
+        if (currentTexts == null) return;
         foreach (var item in dictionary)
             if (!currentTexts.ContainsKey(item.Key) && item.Value.Count >= 2)
-                currentTexts.Add(item.Key, regex.Replace(item.Value.get_Item(1), "\n"));
+                currentTexts.Add(item.Key, regex.Replace(item.Value[1], "\n"));
     }
 }

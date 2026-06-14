@@ -28,11 +28,11 @@ internal class Encounter
 
         if (!string.IsNullOrWhiteSpace(newContent))
         {
-            EncounterTooltip.TooltipTitle = ecob.Title;
-            string orgContent = ecob.MyTooltip == null ? "" : ecob.MyTooltip.TooltipContent;
+            var myTooltip = Traverse.Create(ecob).Field("MyTooltip").GetValue<TooltipText>();
+            string orgContent = myTooltip == null ? "" : myTooltip.TooltipContent;
             EncounterTooltip.TooltipContent = orgContent + (string.IsNullOrEmpty(orgContent) ? "" : "\n") +
-                                              "<size=70%>" + newContent + "</size>";
-            EncounterTooltip.HoldText = ecob.MyTooltip == null ? "" : ecob.MyTooltip.HoldText;
+                                               "<size=70%>" + newContent + "</size>";
+            EncounterTooltip.HoldText = myTooltip == null ? "" : myTooltip.HoldText;
             Tooltip.AddTooltip(EncounterTooltip);
         }
     }
@@ -48,24 +48,12 @@ internal class Encounter
 
         if (actionTexts.Any() && !actionTexts.All(string.IsNullOrEmpty))
         {
-            __instance.AddToLog(new EncounterLogMessage
-            {
-                LogText = new LocalizedString
-                { LocalizationKey = "CSFFCardDetailTooltip.Encounter.PossibleWoundsHint", DefaultText = "If I am hit by an enemy, I might get hurt: (on average)" }
-            });
-            __instance.AddToLog(new EncounterLogMessage
-            {
-                LogText = new LocalizedString
-                { LocalizationKey = "IGNOREKEY", DefaultText = string.Join("\n", actionTexts) }
-            });
+            __instance.AddToLog(new EncounterLogMessage("If I am hit by an enemy, I might get hurt: (on average)"));
+            __instance.AddToLog(new EncounterLogMessage(string.Join("\n", actionTexts)));
         }
         else
         {
-            __instance.AddToLog(new EncounterLogMessage
-            {
-                LogText = new LocalizedString
-                { LocalizationKey = "CSFFCardDetailTooltip.Encounter.ImpossibleWoundsHint", DefaultText = "I am confident it can't hurt me! (on average)" }
-            });
+            __instance.AddToLog(new EncounterLogMessage("I am confident it can't hurt me! (on average)"));
         }
     }
 
@@ -85,15 +73,9 @@ internal class Encounter
             };
         }
 
-        EncounterPlayerDamageReport report = __instance.CurrentRoundPlayerDamageReport;
+        EncounterPlayerDamageReport report = Traverse.Create(__instance).Field("CurrentRoundPlayerDamageReport").GetValue<EncounterPlayerDamageReport>();
         if (report.AttackSeverity > WoundSeverity.NoWound)
-            __instance.AddToLog(
-                new EncounterLogMessage
-                {
-                    LogText = new LocalizedString
-                    { LocalizationKey = "IGNOREKEY", DefaultText = SeverityText(report.AttackSeverity) }
-                }
-            );
+            __instance.AddToLog(new EncounterLogMessage(SeverityText(report.AttackSeverity)));
     }
 
     [HarmonyPostfix]

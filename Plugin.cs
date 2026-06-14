@@ -168,12 +168,14 @@ namespace CSFFCardDetailTooltip
 
                 if (LastDragHoverCard != null)
                 {
-                    TooltipText orgTooltip = LastDragHoverCard.MyTooltip;
+                    var myTooltip = Traverse.Create(LastDragHoverCard).Field("MyTooltip").GetValue<TooltipText>();
+                    TooltipText orgTooltip = myTooltip;
                     if (orgTooltip != null) orgTooltip.TooltipContent = LastDragHoverCardOrgTooltipContent;
                     LastDragHoverCard = null;
                 }
 
-                CardOnCardAction action = __instance.PossibleAction;
+                var possibleAction = Traverse.Create(__instance).Field("PossibleAction").GetValue<CardOnCardAction>();
+                CardOnCardAction action = possibleAction;
                 if (action == null) return;
                 InGameCardBase currentCard =
                     action.CanGiveLiquid(droppedCard) &&
@@ -189,7 +191,7 @@ namespace CSFFCardDetailTooltip
                 texts.Add(FormatCardOnCardAction(action, currentCard, droppedCard));
                 if (texts.Count > 0)
                 {
-                    TooltipText orgTooltip = __instance.MyTooltip;
+                    TooltipText orgTooltip = Traverse.Create(__instance).Field("MyTooltip").GetValue<TooltipText>();
                     LastDragHoverCardOrgTooltipContent = __instance.Content;
                     LastDragHoverCard = __instance;
                     orgTooltip.TooltipContent =
@@ -252,7 +254,7 @@ namespace CSFFCardDetailTooltip
                 }
                 else
                 {
-                    texts.Add(FormatTooltipEntry(cardModel.ObjectWeight, cardModel.CardName.ToString(), 2));
+                    texts.Add(FormatTooltipEntry(Traverse.Create(cardModel).Field("ObjectWeight").GetValue<float>(), cardModel.CardName.ToString(), 2));
                     if ((bool)graphicsM && graphicsM.CharacterWindow.HasCardEquipped(__instance))
                         texts.Add(FormatTooltipEntry(cardModel.WeightReductionWhenEquipped,
                             new LocalizedString
@@ -351,7 +353,7 @@ namespace CSFFCardDetailTooltip
             CardStateChange? recipeStateChange = changeRecipe?.IngredientChanges;
 
             if (cardModel.SpoilageTime &&
-                cardModel.SpoilageTime.Show(__instance.ContainedLiquid, __instance.CurrentSpoilage))
+                cardModel.SpoilageTime.Show(__instance.ContainedLiquid, __instance.CurrentSpoilage, __instance))
             {
                 texts.Add(FormatProgressAndRate(__instance.CurrentSpoilage, cardModel.SpoilageTime.MaxValue == 0
                         ? cardModel.SpoilageTime.FloatValue
@@ -369,13 +371,13 @@ namespace CSFFCardDetailTooltip
                 if (baseSpoilageRate.Count > 0)
                     texts.Add(baseSpoilageRate.Join(delimiter: "\n"));
                 if (__instance.IsCooking())
-                    texts.Add(FormatRateEntry(cardModel.CookingConditions.ExtraSpoilageRate,
+                    texts.Add(FormatRateEntry(Traverse.Create(cardModel.CookingConditions).Field("ExtraSpoilageRate").GetValue<float>(),
                         new LocalizedString
                         { LocalizationKey = "CSFFCardDetailTooltip.Cooking", DefaultText = "Cooking" }));
                 if (cardModel.LocalCounterEffects != null)
                     for (int i = 0; i < cardModel.LocalCounterEffects.Length; i++)
                         if (cardModel.LocalCounterEffects[i].IsActive(__instance))
-                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].SpoilageRateModifier.FloatValue,
+                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].GetModifier(DurabilitiesTypes.Spoilage),
                                 cardModel.LocalCounterEffects[i].Counter.name));
                 if (cardModel.SpoilageTime.ExtraRateWhenEquipped != 0 && graphicsM &&
                     graphicsM.CharacterWindow.HasCardEquipped(__instance))
@@ -406,7 +408,7 @@ namespace CSFFCardDetailTooltip
                 if (baseSpoilageRate.Count > 0)
                     texts.Add(baseSpoilageRate.Join(delimiter: "\n"));
                 if (__instance.ContainedLiquid.IsCooking())
-                    texts.Add(FormatRateEntry(__instance.ContainedLiquid.CardModel.CookingConditions.ExtraSpoilageRate,
+                    texts.Add(FormatRateEntry(Traverse.Create(__instance.ContainedLiquid.CardModel.CookingConditions).Field("ExtraSpoilageRate").GetValue<float>(),
                         new LocalizedString
                         { LocalizationKey = "CSFFCardDetailTooltip.Cooking", DefaultText = "Cooking" }));
                 if (__instance.ContainedLiquid.CardModel.LocalCounterEffects != null)
@@ -414,8 +416,7 @@ namespace CSFFCardDetailTooltip
                         if (__instance.ContainedLiquid.CardModel.LocalCounterEffects[i]
                             .IsActive(__instance.ContainedLiquid))
                             texts.Add(FormatRateEntry(
-                                __instance.ContainedLiquid.CardModel.LocalCounterEffects[i].SpoilageRateModifier
-                                    .FloatValue,
+                                __instance.ContainedLiquid.CardModel.LocalCounterEffects[i].GetModifier(DurabilitiesTypes.Spoilage),
                                 __instance.ContainedLiquid.CardModel.LocalCounterEffects[i].Counter.name));
                 if (__instance.ContainedLiquid.CardModel.SpoilageTime.ExtraRateWhenEquipped != 0 && graphicsM &&
                     graphicsM.CharacterWindow.HasCardEquipped(__instance.ContainedLiquid))
@@ -428,7 +429,7 @@ namespace CSFFCardDetailTooltip
             }
 
             if (cardModel.UsageDurability &&
-                cardModel.UsageDurability.Show(__instance.ContainedLiquid, __instance.CurrentUsageDurability))
+                cardModel.UsageDurability.Show(__instance.ContainedLiquid, __instance.CurrentUsageDurability, __instance))
             {
                 texts.Add(FormatProgressAndRate(__instance.CurrentUsageDurability,
                     cardModel.UsageDurability.MaxValue == 0
@@ -447,13 +448,13 @@ namespace CSFFCardDetailTooltip
                 if (baseUsageRate.Count > 0)
                     texts.Add(baseUsageRate.Join(delimiter: "\n"));
                 if (__instance.IsCooking())
-                    texts.Add(FormatRateEntry(cardModel.CookingConditions.ExtraUsageRate,
+                    texts.Add(FormatRateEntry(cardModel.CookingConditions.GetRate(DurabilitiesTypes.Usage),
                         new LocalizedString
                         { LocalizationKey = "CSFFCardDetailTooltip.Cooking", DefaultText = "Cooking" }));
                 if (cardModel.LocalCounterEffects != null)
                     for (int i = 0; i < cardModel.LocalCounterEffects.Length; i++)
                         if (cardModel.LocalCounterEffects[i].IsActive(__instance))
-                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].UsageRateModifier.FloatValue,
+                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].GetModifier(DurabilitiesTypes.Usage),
                                 cardModel.LocalCounterEffects[i].Counter.name));
                 if (cardModel.UsageDurability.ExtraRateWhenEquipped != 0 && graphicsM &&
                     graphicsM.CharacterWindow.HasCardEquipped(__instance))
@@ -466,7 +467,7 @@ namespace CSFFCardDetailTooltip
             }
 
             if (cardModel.FuelCapacity &&
-                cardModel.FuelCapacity.Show(__instance.ContainedLiquid, __instance.CurrentFuel))
+                cardModel.FuelCapacity.Show(__instance.ContainedLiquid, __instance.CurrentFuel, __instance))
             {
                 texts.Add(FormatProgressAndRate(__instance.CurrentFuel, cardModel.FuelCapacity.MaxValue,
                     string.IsNullOrEmpty(cardModel.FuelCapacity.CardStatName)
@@ -482,13 +483,13 @@ namespace CSFFCardDetailTooltip
                 if (baseFuelRate.Count > 0)
                     texts.Add(baseFuelRate.Join(delimiter: "\n"));
                 if (__instance.IsCooking())
-                    texts.Add(FormatRateEntry(cardModel.CookingConditions.ExtraFuelRate,
+                    texts.Add(FormatRateEntry(cardModel.CookingConditions.GetRate(DurabilitiesTypes.Fuel),
                         new LocalizedString
                         { LocalizationKey = "CSFFCardDetailTooltip.Cooking", DefaultText = "Cooking" }));
                 if (cardModel.LocalCounterEffects != null)
                     for (int i = 0; i < cardModel.LocalCounterEffects.Length; i++)
                         if (cardModel.LocalCounterEffects[i].IsActive(__instance))
-                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].FuelRateModifier.FloatValue,
+                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].GetModifier(DurabilitiesTypes.Fuel),
                                 cardModel.LocalCounterEffects[i].Counter.name));
                 if (cardModel.FuelCapacity.ExtraRateWhenEquipped != 0 && graphicsM &&
                     graphicsM.CharacterWindow.HasCardEquipped(__instance))
@@ -500,7 +501,7 @@ namespace CSFFCardDetailTooltip
                         $"{new LocalizedString { LocalizationKey = "CSFFCardDetailTooltip.Recipe", DefaultText = "Recipe" }} {changeRecipe.ActionName}"));
             }
 
-            if (cardModel.Progress && cardModel.Progress.Show(__instance.ContainedLiquid, __instance.CurrentProgress))
+            if (cardModel.Progress && cardModel.Progress.Show(__instance.ContainedLiquid, __instance.CurrentProgress, __instance))
             {
                 texts.Add(FormatProgressAndRate(__instance.CurrentProgress, cardModel.Progress.MaxValue,
                     string.IsNullOrEmpty(cardModel.Progress.CardStatName)
@@ -516,14 +517,14 @@ namespace CSFFCardDetailTooltip
                 if (baseConsumableRate.Count > 0)
                     texts.Add(baseConsumableRate.Join(delimiter: "\n"));
                 if (__instance.IsCooking())
-                    texts.Add(FormatRateEntry(cardModel.CookingConditions.ExtraProgressRate,
+                    texts.Add(FormatRateEntry(cardModel.CookingConditions.GetRate(DurabilitiesTypes.Progress),
                         new LocalizedString
                         { LocalizationKey = "CSFFCardDetailTooltip.Cooking", DefaultText = "Cooking" }));
                 if (cardModel.LocalCounterEffects != null)
                     for (int i = 0; i < cardModel.LocalCounterEffects.Length; i++)
                         if (cardModel.LocalCounterEffects[i].IsActive(__instance))
                             texts.Add(FormatRateEntry(
-                                cardModel.LocalCounterEffects[i].ConsumableChargesModifier.FloatValue,
+                                cardModel.LocalCounterEffects[i].GetModifier(DurabilitiesTypes.Progress),
                                 cardModel.LocalCounterEffects[i].Counter.name));
                 if (cardModel.Progress.ExtraRateWhenEquipped != 0 && graphicsM &&
                     graphicsM.CharacterWindow.HasCardEquipped(__instance))
@@ -560,7 +561,7 @@ namespace CSFFCardDetailTooltip
             }
 
             if (cardModel.SpecialDurability1 &&
-                cardModel.SpecialDurability1.Show(__instance.ContainedLiquid, __instance.CurrentSpecial1))
+                cardModel.SpecialDurability1.Show(__instance.ContainedLiquid, __instance.CurrentSpecial1, __instance))
             {
                 texts.Add(FormatProgressAndRate(__instance.CurrentSpecial1, cardModel.SpecialDurability1.MaxValue,
                     string.IsNullOrEmpty(cardModel.SpecialDurability1.CardStatName)
@@ -575,13 +576,13 @@ namespace CSFFCardDetailTooltip
                 if (baseSpecial1Rate.Count > 0)
                     texts.Add(baseSpecial1Rate.Join(delimiter: "\n"));
                 if (__instance.IsCooking())
-                    texts.Add(FormatRateEntry(cardModel.CookingConditions.ExtraSpecial1Rate,
+                    texts.Add(FormatRateEntry(cardModel.CookingConditions.GetRate(DurabilitiesTypes.Special1),
                         new LocalizedString
                         { LocalizationKey = "CSFFCardDetailTooltip.Cooking", DefaultText = "Cooking" }));
                 if (cardModel.LocalCounterEffects != null)
                     for (int i = 0; i < cardModel.LocalCounterEffects.Length; i++)
                         if (cardModel.LocalCounterEffects[i].IsActive(__instance))
-                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].Special1RateModifier.FloatValue,
+                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].GetModifier(DurabilitiesTypes.Special1),
                                 cardModel.LocalCounterEffects[i].Counter.name));
                 if (cardModel.SpecialDurability1.ExtraRateWhenEquipped != 0 && graphicsM &&
                     graphicsM.CharacterWindow.HasCardEquipped(__instance))
@@ -594,7 +595,7 @@ namespace CSFFCardDetailTooltip
             }
 
             if (cardModel.SpecialDurability2 &&
-                cardModel.SpecialDurability2.Show(__instance.ContainedLiquid, __instance.CurrentSpecial2))
+                cardModel.SpecialDurability2.Show(__instance.ContainedLiquid, __instance.CurrentSpecial2, __instance))
             {
                 texts.Add(FormatProgressAndRate(__instance.CurrentSpecial2, cardModel.SpecialDurability2.MaxValue,
                     string.IsNullOrEmpty(cardModel.SpecialDurability2.CardStatName)
@@ -609,13 +610,13 @@ namespace CSFFCardDetailTooltip
                 if (baseSpecial2Rate.Count > 0)
                     texts.Add(baseSpecial2Rate.Join(delimiter: "\n"));
                 if (__instance.IsCooking())
-                    texts.Add(FormatRateEntry(cardModel.CookingConditions.ExtraSpecial2Rate,
+                    texts.Add(FormatRateEntry(cardModel.CookingConditions.GetRate(DurabilitiesTypes.Special2),
                         new LocalizedString
                         { LocalizationKey = "CSFFCardDetailTooltip.Cooking", DefaultText = "Cooking" }));
                 if (cardModel.LocalCounterEffects != null)
                     for (int i = 0; i < cardModel.LocalCounterEffects.Length; i++)
                         if (cardModel.LocalCounterEffects[i].IsActive(__instance))
-                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].Special2RateModifier.FloatValue,
+                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].GetModifier(DurabilitiesTypes.Special2),
                                 cardModel.LocalCounterEffects[i].Counter.name));
                 if (cardModel.SpecialDurability2.ExtraRateWhenEquipped != 0 && graphicsM &&
                     graphicsM.CharacterWindow.HasCardEquipped(__instance))
@@ -628,7 +629,7 @@ namespace CSFFCardDetailTooltip
             }
 
             if (cardModel.SpecialDurability3 &&
-                cardModel.SpecialDurability3.Show(__instance.ContainedLiquid, __instance.CurrentSpecial3))
+                cardModel.SpecialDurability3.Show(__instance.ContainedLiquid, __instance.CurrentSpecial3, __instance))
             {
                 texts.Add(FormatProgressAndRate(__instance.CurrentSpecial3, cardModel.SpecialDurability3.MaxValue,
                     string.IsNullOrEmpty(cardModel.SpecialDurability3.CardStatName)
@@ -643,13 +644,13 @@ namespace CSFFCardDetailTooltip
                 if (baseSpecial3Rate.Count > 0)
                     texts.Add(baseSpecial3Rate.Join(delimiter: "\n"));
                 if (__instance.IsCooking())
-                    texts.Add(FormatRateEntry(cardModel.CookingConditions.ExtraSpecial3Rate,
+                    texts.Add(FormatRateEntry(cardModel.CookingConditions.GetRate(DurabilitiesTypes.Special3),
                         new LocalizedString
                         { LocalizationKey = "CSFFCardDetailTooltip.Cooking", DefaultText = "Cooking" }));
                 if (cardModel.LocalCounterEffects != null)
                     for (int i = 0; i < cardModel.LocalCounterEffects.Length; i++)
                         if (cardModel.LocalCounterEffects[i].IsActive(__instance))
-                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].Special3RateModifier.FloatValue,
+                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].GetModifier(DurabilitiesTypes.Special3),
                                 cardModel.LocalCounterEffects[i].Counter.name));
                 if (cardModel.SpecialDurability3.ExtraRateWhenEquipped != 0 && graphicsM &&
                     graphicsM.CharacterWindow.HasCardEquipped(__instance))
@@ -662,7 +663,7 @@ namespace CSFFCardDetailTooltip
             }
 
             if (cardModel.SpecialDurability4 &&
-                cardModel.SpecialDurability4.Show(__instance.ContainedLiquid, __instance.CurrentSpecial4))
+                cardModel.SpecialDurability4.Show(__instance.ContainedLiquid, __instance.CurrentSpecial4, __instance))
             {
                 texts.Add(FormatProgressAndRate(__instance.CurrentSpecial4, cardModel.SpecialDurability4.MaxValue,
                     string.IsNullOrEmpty(cardModel.SpecialDurability4.CardStatName)
@@ -677,13 +678,13 @@ namespace CSFFCardDetailTooltip
                 if (baseSpecial4Rate.Count > 0)
                     texts.Add(baseSpecial4Rate.Join(delimiter: "\n"));
                 if (__instance.IsCooking())
-                    texts.Add(FormatRateEntry(cardModel.CookingConditions.ExtraSpecial4Rate,
+                    texts.Add(FormatRateEntry(cardModel.CookingConditions.GetRate(DurabilitiesTypes.Special4),
                         new LocalizedString
                         { LocalizationKey = "CSFFCardDetailTooltip.Cooking", DefaultText = "Cooking" }));
                 if (cardModel.LocalCounterEffects != null)
                     for (int i = 0; i < cardModel.LocalCounterEffects.Length; i++)
                         if (cardModel.LocalCounterEffects[i].IsActive(__instance))
-                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].Special4RateModifier.FloatValue,
+                            texts.Add(FormatRateEntry(cardModel.LocalCounterEffects[i].GetModifier(DurabilitiesTypes.Special4),
                                 cardModel.LocalCounterEffects[i].Counter.name));
                 if (cardModel.SpecialDurability4.ExtraRateWhenEquipped != 0 && graphicsM &&
                     graphicsM.CharacterWindow.HasCardEquipped(__instance))

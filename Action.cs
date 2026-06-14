@@ -18,7 +18,7 @@ internal class Action
         if (!Plugin.Enabled) return;
         List<string> texts = [];
         GameManager gm = GameManager.Instance;
-        CollectionDropReport dropReport = __instance.DropReport;
+        CollectionDropReport dropReport = Traverse.Create(__instance).Field("DropReport").GetValue<CollectionDropReport>();
 
         if (dropReport.FromCard != null && dropReport.FromAction != null &&
             dropReport.FromAction.HasSuccessfulDrop &&
@@ -38,9 +38,9 @@ internal class Action
             if (currentCard.IsBlueprintInstance)
             {
                 if (__instance.Index == -2)
-                    action = blueprintConstructionPopup.CurrentBuildAction;
+                    action = Traverse.Create(blueprintConstructionPopup).Field("CurrentBuildAction").GetValue<DismantleCardAction>();
                 else if (__instance.Index == -1)
-                    action = blueprintConstructionPopup.CurrentDeconstructAction;
+                    action = Traverse.Create(blueprintConstructionPopup).Field("CurrentDeconstructAction").GetValue<DismantleCardAction>();
             }
             else if (__instance.Index > -1 && __instance.Index < currentCard.DismantleActions.Length + (popup.CurrentCard.CardModel.CannotEmptyWithAnAction ? -1 : 0))
             {
@@ -55,7 +55,7 @@ internal class Action
         }
         else if (explorationPopup && explorationPopup.ExplorationCard)
         {
-            if (__instance.name == "Button" || explorationPopup.CurrentPhase != 0) return;
+            if (__instance.name == "Button" || Traverse.Create(explorationPopup).Field("CurrentPhase").GetValue<int>() != 0) return;
             currentCard = explorationPopup.ExplorationCard;
             action = currentCard.DismantleActions[__instance.Index];
             //if (action != null)
@@ -104,12 +104,16 @@ internal class Action
                 action = actionSet.Actions[__instance.Index];
             }
         }
-        else if (statDetailsPopup && statDetailsPopup.CurrentStatus != null)
+        else if (statDetailsPopup)
         {
-            GameStat currentStatus = statDetailsPopup.StatModel;
-            if (__instance.Index > -1 && __instance.Index < currentStatus.StatActions.Length)
+            GameStat statModel = Traverse.Create(statDetailsPopup).Field("StatModel").GetValue<GameStat>();
+            StatStatus currentStatus = Traverse.Create(statDetailsPopup).Field("CurrentStatus").GetValue<StatStatus>();
+            if (currentStatus != null && statModel != null)
             {
-                action = currentStatus.StatActions[__instance.Index];
+                if (__instance.Index > -1 && __instance.Index < statModel.StatActions.Length)
+                {
+                    action = statModel.StatActions[__instance.Index];
+                }
             }
         }
         if (action != null)
@@ -127,11 +131,13 @@ internal class Action
         string newContent = texts.Join(delimiter: "\n");
         if (!string.IsNullOrWhiteSpace(newContent))
         {
+            var myTooltip = Traverse.Create(__instance).Field("MyTooltip").GetValue<TooltipText>();
+
             ActionTooltip.TooltipTitle = __instance.Title;
-            string orgContent = __instance.MyTooltip?.TooltipContent;
+            string orgContent = myTooltip?.TooltipContent;
             ActionTooltip.TooltipContent = orgContent + (string.IsNullOrEmpty(orgContent) ? "" : "\n") +
                                            "<size=70%>" + newContent + "</size>";
-            ActionTooltip.HoldText = __instance.MyTooltip?.HoldText ?? "";
+            ActionTooltip.HoldText = myTooltip?.HoldText ?? "";
             Tooltip.AddTooltip(ActionTooltip);
         }
     }

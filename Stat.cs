@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.UI;
 using static CSFFCardDetailTooltip.Utils;
 
 namespace CSFFCardDetailTooltip;
@@ -33,7 +34,7 @@ internal class Stat
     {
         if (!Plugin.Enabled || !Plugin.ForceInspectStatInfos) return;
         _Stat.CannotBeInspected = false;
-        __instance.InteractionButton.interactable = true;
+        Traverse.Create(__instance).Field("InteractionButton").GetValue<Button>().interactable = true;
     }
     [HarmonyPostfix]
     [HarmonyPatch(typeof(StatInfluenceInfo), "SetupStatSource")]
@@ -41,7 +42,7 @@ internal class Stat
     {
         if (!Plugin.Enabled || !Plugin.ForceInspectStatInfos) return;
         _Stat.StatModel.CannotBeInspected = false;
-        __instance.InteractionButton.interactable = true;
+        Traverse.Create(__instance).Field("InteractionButton").GetValue<Button>().interactable = true;
     }
 
     public static string FormatInGameStat(InGameStat stat)

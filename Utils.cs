@@ -11,7 +11,7 @@ public static class Utils
 {
     public static string LcStr(string key, string defaultText = null)
     {
-        if (LocalizationManager.CurrentTexts != null && LocalizationManager.CurrentTexts.TryGetValue(key, out string value))
+        if (LocalizationManager.GetText(key, out string value))
             return value;
         return defaultText ?? key;
     }
@@ -52,13 +52,13 @@ public static void GetWoundsForSeverity_il2cpp(this PlayerWounds playerWounds, W
 
     public static string FormatEncounterPlayerAction(GenericEncounterPlayerAction action, EncounterPopup popup, int indent = 0)
     {
-        MeleeClashResultsReport backupCurrentRoundMeleeClashResult = popup.CurrentRoundMeleeClashResult;
-        RangedClashResultReport backupCurrentRoundRangedClashResult = popup.CurrentRoundRangedClashResult;
-        float num = popup.CalculateActionClashChance(action);
-        MeleeClashResultsReport currentRoundMeleeClashResult = popup.CurrentRoundMeleeClashResult;
-        RangedClashResultReport currentRoundRangedClashResult = popup.CurrentRoundRangedClashResult;
-        popup.CurrentRoundMeleeClashResult = backupCurrentRoundMeleeClashResult;
-        popup.CurrentRoundRangedClashResult = backupCurrentRoundRangedClashResult;
+        MeleeClashResultsReport backupCurrentRoundMeleeClashResult = Traverse.Create(popup).Field("CurrentRoundMeleeClashResult").GetValue<MeleeClashResultsReport>();
+        RangedClashResultReport backupCurrentRoundRangedClashResult = Traverse.Create(popup).Field("CurrentRoundRangedClashResult").GetValue<RangedClashResultReport>();
+        float num = Traverse.Create(popup).Method("CalculateActionClashChance", action).GetValue<float>();
+        MeleeClashResultsReport currentRoundMeleeClashResult = Traverse.Create(popup).Field("CurrentRoundMeleeClashResult").GetValue<MeleeClashResultsReport>();
+        RangedClashResultReport currentRoundRangedClashResult = Traverse.Create(popup).Field("CurrentRoundRangedClashResult").GetValue<RangedClashResultReport>();
+        Traverse.Create(popup).Field("CurrentRoundMeleeClashResult").SetValue(backupCurrentRoundMeleeClashResult);
+        Traverse.Create(popup).Field("CurrentRoundRangedClashResult").SetValue(backupCurrentRoundRangedClashResult);
 
         ClashResultsReport commonClashResult = action.ActionRange switch
         {
@@ -91,7 +91,7 @@ public static void GetWoundsForSeverity_il2cpp(this PlayerWounds playerWounds, W
             }
             if (!action.DoesNotAttack)
             {
-                Vector2 damage = action.InitialDamage;
+                Vector2 damage = Traverse.Create(action).Field("InitialDamage").GetValue<Vector2>();
                 Vector2 damageStatSum = action.DamageStatSum;
                 Vector2 sizeDamage = new(popup.PlayerSize, popup.PlayerSize);
 
@@ -140,7 +140,7 @@ public static void GetWoundsForSeverity_il2cpp(this PlayerWounds playerWounds, W
                 summary.AppendLine(FormatBasicEntry(LcStr("CSFFCardDetailTooltip.Encounter.EnemyHitRate", "Enemy Hit Rate"), $"{enemySuccess * 100f:0.##}%", indent: indent + 2));
             }
 
-            Vector2 damage = action.InitialDamage;
+            Vector2 damage = Traverse.Create(action).Field("InitialDamage").GetValue<Vector2>();
             Vector2 damageStatSum = action.DamageStatSum;
             if (!action.DoesNotAttack)
             {
@@ -414,8 +414,9 @@ public static void GetWoundsForSeverity_il2cpp(this PlayerWounds playerWounds, W
 
         if (action.ActionRange == ActionRange.Ranged)
         {
+            Vector2 clashRangedInaccuracy = Traverse.Create(action).Field("ClashRangedInaccuracy").GetValue<Vector2>();
             result.AppendLine($"{spaces}{LcStr("CSFFCardDetailTooltip.Encounter.EnemySizeMalus", "Enemy Size Malus")}: {ColorFloat(-encounter.CurrentEnemySize)}");
-            result.AppendLine($"{spaces}{LcStr("CSFFCardDetailTooltip.Encounter.InaccuracyMalus", "Inaccuracy Malus")}: {ColorFloat(-action.ClashRangedInaccuracy.y)}");
+            result.AppendLine($"{spaces}{LcStr("CSFFCardDetailTooltip.Encounter.InaccuracyMalus", "Inaccuracy Malus")}: {ColorFloat(-clashRangedInaccuracy.y)}");
             result.AppendLine($"{spaces}{LcStr("CSFFCardDetailTooltip.Encounter.EnemyCoverMalus", "Enemy Cover Malus")}: {ColorFloat(-encounter.CurrentEnemyCover)}");
         }
 
